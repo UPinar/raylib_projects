@@ -16,7 +16,7 @@
                 "args": [
                     "RAYLIB_PATH=C:/raylib",
                     "PROJECT_NAME=main",
-                    "OBJS=main.c",
+                    "OBJS=main.c helper_functions.c",
                     "BUILD_MODE=DEBUG"
                 ],
             },
@@ -46,7 +46,7 @@
                 "args": [
                     "RAYLIB_PATH=C:/raylib",
                     "PROJECT_NAME=main",
-                    "OBJS=main.c"
+                    "OBJS=main.c helper_functions.c"
                 ],
             },
             "osx": {
