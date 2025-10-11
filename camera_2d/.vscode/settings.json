@@ -1,0 +1,18 @@
+{
+	"files.exclude": {
+		"**/.git": true,
+		"**/.svn": true,
+		"**/.hg": true,
+		"**/CVS": true,
+		"**/.DS_Store": true,
+		"**/*.o": true,
+		"**/*.exe": true,
+  },
+  "files.associations": {
+    "stdlib.h": "c",
+    "time.h": "c",
+    "raylib.h": "c",
+    "cstdio": "c",
+    "*.m": "c"
+  }
+}
