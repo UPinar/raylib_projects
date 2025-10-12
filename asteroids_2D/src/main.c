@@ -8,9 +8,6 @@
 #define SCREEN_HEIGHT         600
 #define SCREEN_FPS            144
 
-#define PLAYER_WIDTH          96.0f
-#define PLAYER_HEIGHT         64.0f
-
 #define CROSSHAIR_WIDTH       24
 #define CROSSHAIR_HEIGHT      24
 #define CROSSHAIR_THICKNESS   3.0f
@@ -19,15 +16,14 @@
 // #define DEBUG
 
 
-static void LimitMousePosition(Vector2* const p_mousePosition);
-static void UpdatePlayerPosition(Player_t* const p_player, float deltaTime);
-static void UpdatePlayerScreenBounds(Player_t* const p_player);
-static void UpdatePlayerRotation(Player_t* const player, Vector2 mousePosition);
+static void LimitMousePosition(Vector2* p_mousePosition);
+static void UpdatePlayerPosition(Player_t* p_player, float deltaTime);
+static void UpdatePlayerScreenBounds(Player_t* p_player);
+static void UpdatePlayerRotation(Player_t* p_player, Vector2 mousePosition);
 
 static void DrawCrosshair(Vector2 position);
-static void DrawPlayer(const Texture2D* const p_playerTexture, const Player_t* const p_player);
+static void DrawPlayer(const Texture2D* p_playerTexture, const Player_t* p_player);
 
-// static void CheckCrosshairBounds(Vector2* crosshairPosition);
 
 int main(void)
 {
@@ -73,7 +69,7 @@ int main(void)
   return 0;
 }
 
-static void LimitMousePosition(Vector2* const p_mousePosition)
+static void LimitMousePosition(Vector2* p_mousePosition)
 {
   if (p_mousePosition->x < 0.0f)
     p_mousePosition->x = 0.0f;
@@ -90,7 +86,7 @@ static void LimitMousePosition(Vector2* const p_mousePosition)
   #endif
 }
 
-static void UpdatePlayerScreenBounds(Player_t* const p_player)
+static void UpdatePlayerScreenBounds(Player_t* p_player)
 {
   float playerLeft    = p_player->m_coordinates.x - p_player->m_size.x / 2;
   float playerRight   = p_player->m_coordinates.x + p_player->m_size.x / 2;
@@ -108,13 +104,13 @@ static void UpdatePlayerScreenBounds(Player_t* const p_player)
     p_player->m_coordinates.y = SCREEN_HEIGHT - p_player->m_size.y / 2;
 }
 
-static void UpdatePlayerRotation(Player_t* player, Vector2 mousePosition)
+static void UpdatePlayerRotation(Player_t* p_player, Vector2 mousePosition)
 {
-  Vector2 direction = Vector2Subtract(mousePosition, player->m_coordinates);
-  player->m_rotation_degrees = atan2f(direction.y, direction.x) * (180.0f / PI);
+  Vector2 direction = Vector2Subtract(mousePosition, p_player->m_coordinates);
+  p_player->m_rotation_degrees = atan2f(direction.y, direction.x) * (180.0f / PI);
 }
 
-static void UpdatePlayerPosition(Player_t* const p_player, float deltaTime)
+static void UpdatePlayerPosition(Player_t* p_player, float deltaTime)
 {
   if (IsKeyDown(KEY_D))
     PlayerGoRight(p_player, deltaTime);
@@ -126,7 +122,7 @@ static void UpdatePlayerPosition(Player_t* const p_player, float deltaTime)
     PlayerGoDown(p_player, deltaTime);
 }
 
-static void DrawPlayer(const Texture2D* const p_playerTexture, const Player_t* const p_player)
+static void DrawPlayer(const Texture2D* p_playerTexture, const Player_t* p_player)
 {
   DrawTexturePro( *p_playerTexture, 
                   (Rectangle){p_player->m_location_inside_image.x, 

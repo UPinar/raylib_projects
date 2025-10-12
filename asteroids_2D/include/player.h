@@ -3,6 +3,8 @@
 
 #include "raylib.h"
 
+#define PLAYER_WIDTH          96.0f
+#define PLAYER_HEIGHT         64.0f
 #define PLAYER_SPEED 300.0f
 
 typedef struct {
@@ -13,9 +15,9 @@ typedef struct {
   float m_rotation_degrees;
 } Player_t;
 
-void PlayerGoRight(Player_t* const player, float deltaTime);
-void PlayerGoLeft(Player_t* const player, float deltaTime);
-void PlayerGoUp(Player_t* const player, float deltaTime);
-void PlayerGoDown(Player_t* const player, float deltaTime);
+void PlayerGoRight(Player_t* p_player, float deltaTime);
+void PlayerGoLeft(Player_t* p_player, float deltaTime);
+void PlayerGoUp(Player_t* p_player, float deltaTime);
+void PlayerGoDown(Player_t* p_player, float deltaTime);
 
 #endif // PLAYER_H
