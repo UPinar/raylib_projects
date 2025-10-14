@@ -82,7 +82,7 @@ void UpdateSpaceshipPosition(Spaceship_t* spaceship, float deltaTime)
   if (IsKeyDown(KEY_S))
     SpaceshipGoDown(spaceship, deltaTime);
 }
-
+/*
 void UpdateAsteroids(Asteroid_t* asteroidsArray)
 {
   float deltaTime = GetFrameTime();
@@ -112,6 +112,7 @@ void UpdateAsteroids(Asteroid_t* asteroidsArray)
     }
   }
 }
+  */
 
 void DrawSpaceship(const Texture2D* texture, Spaceship_t* spaceship)
 {
@@ -267,7 +268,7 @@ int main(void)
     /*
       // -------------- SPAWNING ASTEROIDS BY TIMER --------------
       asteroidSpawnTimer += GetFrameTime();
-      
+
       if (asteroidSpawnTimer >= 2.0f)
       {
         asteroidSpawnTimer = 0.0f;

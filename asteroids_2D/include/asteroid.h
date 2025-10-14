@@ -24,7 +24,6 @@
 #define   ASTEROID_MIN_SPEED          50.0F  // Pixels per second
 #define   ASTEROID_MAX_SPEED          150.0F // Pixels per second
 
-extern int maxAsteroidCount;
 
 typedef enum AsteroidSize
 {
