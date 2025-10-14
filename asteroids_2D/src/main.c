@@ -18,6 +18,8 @@
 
 #define DEBUG
 
+size_t maxAsteroidCount = 100;
+
 Vector2 GetClampedMousePosition(const Texture2D* crosshair)
 {
   float halfWidth = (float)crosshair->width * CROSSHAIR_SCALE / 2.0f;
@@ -82,13 +84,59 @@ void UpdateSpaceshipPosition(Spaceship_t* spaceship, float deltaTime)
   if (IsKeyDown(KEY_S))
     SpaceshipGoDown(spaceship, deltaTime);
 }
-/*
-void UpdateAsteroids(Asteroid_t* asteroidsArray)
+
+static bool CheckIfAsteroidIsOutOfScreen(Asteroid_t* asteroid)
+{
+  return (  asteroid->m_position.x < 0              || 
+            asteroid->m_position.x > SCREEN_WIDTH   ||
+            asteroid->m_position.y < 0              || 
+            asteroid->m_position.y > SCREEN_HEIGHT);
+
+}
+
+static Vector2 GetRandomAsteroidDirection(void)
+{
+  float x = GetRandomValue(0, SCREEN_WIDTH);
+  float y = GetRandomValue(0, SCREEN_HEIGHT);
+  return Vector2Normalize((Vector2){ x, y });
+}
+
+static Vector2 GetRandomAsteroidSpawnLocation(void)
+{
+  float x = 0.0f;
+  float y = 0.0f;
+
+  int side = GetRandomValue(0, 3); 
+
+  switch (side)
+  {
+    case 0: // left
+      x = GetRandomValue(-200, 0);
+      y = GetRandomValue(-200, SCREEN_HEIGHT + 200);
+      break;
+    case 1: // right
+      x = GetRandomValue(SCREEN_WIDTH, SCREEN_WIDTH + 200);
+      y = GetRandomValue(-200, SCREEN_HEIGHT + 200);
+      break;
+    case 2: // top
+      x = GetRandomValue(-200, SCREEN_WIDTH + 200);
+      y = GetRandomValue(-200, 0);
+      break;
+    case 3: // bottom
+      x = GetRandomValue(-200, SCREEN_WIDTH + 200);
+      y = GetRandomValue(SCREEN_HEIGHT, SCREEN_HEIGHT + 200);
+      break;
+  }
+
+  return (Vector2){ x, y };
+}
+
+void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
 {
   float deltaTime = GetFrameTime();
 
-  for (int i = 0; i < maxAsteroidCount; i++)
-  {
+  // Deactivate asteroids that are out of screen for more than 2 seconds
+  for (int i = 0; i < currentAsteroidCount; i++)
     if (asteroidsArray[i].m_active)
     {
       Asteroid_t* asteroid = &asteroidsArray[i];
@@ -96,23 +144,49 @@ void UpdateAsteroids(Asteroid_t* asteroidsArray)
       asteroid->m_position.x += asteroid->m_direction.x * asteroid->m_speed * deltaTime;
       asteroid->m_position.y += asteroid->m_direction.y * asteroid->m_speed * deltaTime;
 
-      // Deactivate Asteroid 
-      if ((asteroid->m_position.x < 0               ||
-          asteroid->m_position.y < 0                ||
-          asteroid->m_position.x > SCREEN_WIDTH     || 
-          asteroid->m_position.y > SCREEN_HEIGHT)   &&
-          asteroid->m_lifetime < 2.0f)
-      {
-        asteroid->m_active = false;
-      }
-      else if (asteroid->m_lifetime < 2.0f)
-      {
+      bool asteroidIsOutOfScreen = CheckIfAsteroidIsOutOfScreen(asteroid);
+      if (asteroidIsOutOfScreen && asteroid->m_lifetime < 2.0f)
         asteroid->m_lifetime += deltaTime;
+      else if (asteroidIsOutOfScreen && asteroid->m_lifetime >= 2.0f)
+        asteroid->m_active = false;
+    }
+
+
+  // Spawn new asteroids if there is an inactive one
+  for (int i = 0; i < currentAsteroidCount; i++)
+    if (!asteroidsArray[i].m_active)
+    {
+      Asteroid_t* asteroid = &asteroidsArray[i];
+      asteroid->m_active = true;
+      asteroid->m_position = GetRandomAsteroidSpawnLocation();
+      asteroid->m_direction = GetRandomAsteroidDirection();
+      asteroid->m_speed = (float)GetRandomValue((int)ASTEROID_MIN_SPEED, (int)ASTEROID_MAX_SPEED);
+      asteroid->m_lifetime = 0.0f;
+
+      int randomSize = GetRandomValue(0, 2);
+      switch (randomSize)
+      {
+        case 0:
+          asteroid->m_size                = ASTEROID_SIZE_LARGE;
+          asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_LARGE_TOP_LEFT_X, ASTEROID_LARGE_TOP_LEFT_Y};
+          asteroid->m_width               = ASTEROID_LARGE_WIDTH;
+          asteroid->m_height              = ASTEROID_LARGE_HEIGHT;
+          break;
+        case 1:
+          asteroid->m_size = ASTEROID_SIZE_MEDIUM;
+          asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_MEDIUM_TOP_LEFT_X, ASTEROID_MEDIUM_TOP_LEFT_Y};
+          asteroid->m_width               = ASTEROID_MEDIUM_WIDTH;
+          asteroid->m_height              = ASTEROID_MEDIUM_HEIGHT;
+          break;
+        case 2:
+          asteroid->m_size = ASTEROID_SIZE_SMALL;
+          asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_SMALL_TOP_LEFT_X, ASTEROID_SMALL_TOP_LEFT_Y};
+          asteroid->m_width               = ASTEROID_SMALL_WIDTH;
+          asteroid->m_height              = ASTEROID_SMALL_HEIGHT;
+          break;
       }
     }
-  }
 }
-  */
 
 void DrawSpaceship(const Texture2D* texture, Spaceship_t* spaceship)
 {
@@ -208,9 +282,34 @@ void DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 cross
   }
 }
 
+void DrawAsteroids(const Texture2D* texture, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+{
+  for (int i = 0; i < currentAsteroidCount; i++)
+  {
+    if (asteroidsArray[i].m_active)
+    {
+      Asteroid_t* asteroid = &asteroidsArray[i];
+
+      DrawTexturePro( *texture,
+        (Rectangle){ asteroid->m_image_location_x_y.x, 
+                     asteroid->m_image_location_x_y.y, 
+                     asteroid->m_width,
+                     asteroid->m_height },
+        (Rectangle){
+          asteroid->m_position.x,
+          asteroid->m_position.y,
+          asteroid->m_width,
+          asteroid->m_height},
+        (Vector2){ asteroid->m_width / 2, asteroid->m_height / 2},
+        0.0f,
+        WHITE);
+    }
+  }
+}
+
 int main(void)
 {
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Fresh Start Files");
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Asteroids 2D");
 
   int monitorCount = GetMonitorCount();
   if (monitorCount > 1)
@@ -235,8 +334,8 @@ int main(void)
     return -1;
   }
 
-  int maxAsteroidCount = 5;
-  Asteroid_t* asteroidsArray = (Asteroid_t*)calloc(maxAsteroidCount, sizeof(Asteroid_t));
+  size_t currentAsteroidCount = 5;
+  Asteroid_t* asteroidsArray = (Asteroid_t*)calloc(currentAsteroidCount, sizeof(Asteroid_t));
   if( asteroidsArray == NULL)
   {
     free(bulletsArray);
@@ -246,9 +345,7 @@ int main(void)
 
   Vector2 crosshairCenter = { 0 };
 
-  // TODO: i want to setup a timer and realloc by 1 asteroid every 2 second
-  
-  // float asteroidSpawnTimer = 0.0f;
+  float asteroidSpawnTimer = 0.0f;
 
   while (!WindowShouldClose())
   {
@@ -261,31 +358,25 @@ int main(void)
     UpdateSpaceshipPosition(&spaceship, GetFrameTime());
 
 
-    // ilk tur 5 adet asteroid spaw edilecek.
-    // bu asteroidlerin m_active si true olacak.
-    // eger ekranin disina cikma durumu veya patlama durumu ol
+    // -------------- SPAWNING ASTEROIDS BY TIMER --------------
+    asteroidSpawnTimer += GetFrameTime();
 
-    /*
-      // -------------- SPAWNING ASTEROIDS BY TIMER --------------
-      asteroidSpawnTimer += GetFrameTime();
-
-      if (asteroidSpawnTimer >= 2.0f)
+    if (asteroidSpawnTimer >= 5.0f)
+    {
+      asteroidSpawnTimer = 0.0f;
+      Asteroid_t* tempAsteroidArray = realloc(asteroidsArray, (currentAsteroidCount + 1) * sizeof(Asteroid_t));
+      if (tempAsteroidArray == NULL)
       {
-        asteroidSpawnTimer = 0.0f;
-        asteroidsArray = realloc(asteroidsArray, (maxAsteroidCount + 1) * sizeof(Asteroid_t));
-        if (asteroidsArray == NULL)
-        {
-          free(bulletsArray);
-          CloseWindow();
-          return -1;
-        }
-        
-
-        UpdateAsteroids(asteroidsArray);
-        ++maxAsteroidCount;
+        free(bulletsArray);
+        CloseWindow();
+        return -1;
       }
-    */
+      asteroidsArray = tempAsteroidArray;
+      ++currentAsteroidCount;
+    }
+    
     UpdateBulletsLocations(bulletsArray);
+    UpdateAsteroids(asteroidsArray, currentAsteroidCount);
 
     // -------------- DRAWING --------------
     DrawSpaceship(&texture, &spaceship);
@@ -295,7 +386,7 @@ int main(void)
       FindFirstAvailableBulletAndShoot(bulletsArray, spaceship.m_center, crosshairCenter);
 
     DrawBullets(&texture, bulletsArray, crosshairCenter);
-    // DrawAsteroids(&texture, asteroidsArray);
+    DrawAsteroids(&texture, asteroidsArray, currentAsteroidCount);
 
     DrawLine(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT, RED);
     DrawLine(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, RED);
