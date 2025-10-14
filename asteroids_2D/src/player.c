@@ -1,30 +1,30 @@
 #include "player.h"
 #include "raymath.h"  // Vector2Normalize
 
-void PlayerGoRight(Player_t* p_player, float deltaTime)
+void SpaceshipGoRight(Spaceship_t* spaceship, float deltaTime)
 {
-  p_player->m_directions.x = 1.0f;
-  Vector2Normalize(p_player->m_directions);
-  p_player->m_coordinates.x += p_player->m_directions.x * deltaTime * PLAYER_SPEED;
+  spaceship->m_direction.x = 1.0f;
+  spaceship->m_direction = Vector2Normalize(spaceship->m_direction);
+  spaceship->m_center.x += spaceship->m_direction.x * deltaTime * SPACESHIP_SPEED;
 }
 
-void PlayerGoLeft(Player_t* p_player, float deltaTime)
+void SpaceshipGoLeft(Spaceship_t* spaceship, float deltaTime)
 {
-  p_player->m_directions.x = -1.0f;
-  Vector2Normalize(p_player->m_directions);
-  p_player->m_coordinates.x += p_player->m_directions.x * deltaTime * PLAYER_SPEED;
+  spaceship->m_direction.x = -1.0f;
+  spaceship->m_direction = Vector2Normalize(spaceship->m_direction);
+  spaceship->m_center.x += spaceship->m_direction.x * deltaTime * SPACESHIP_SPEED;
 }
 
-void PlayerGoUp(Player_t* p_player, float deltaTime)
+void SpaceshipGoUp(Spaceship_t* spaceship, float deltaTime)
 {
-  p_player->m_directions.y = -1.0f;
-  Vector2Normalize(p_player->m_directions);
-  p_player->m_coordinates.y += p_player->m_directions.y * deltaTime * PLAYER_SPEED;
+  spaceship->m_direction.y = -1.0f;
+  spaceship->m_direction = Vector2Normalize(spaceship->m_direction);
+  spaceship->m_center.y += spaceship->m_direction.y * deltaTime * SPACESHIP_SPEED;
 }
 
-void PlayerGoDown(Player_t* p_player, float deltaTime)
+void SpaceshipGoDown(Spaceship_t* spaceship, float deltaTime)
 {
-  p_player->m_directions.y = 1.0f;
-  Vector2Normalize(p_player->m_directions);
-  p_player->m_coordinates.y += p_player->m_directions.y * deltaTime * PLAYER_SPEED;
+  spaceship->m_direction.y = 1.0f;
+  spaceship->m_direction = Vector2Normalize(spaceship->m_direction);
+  spaceship->m_center.y += spaceship->m_direction.y * deltaTime * SPACESHIP_SPEED;
 }

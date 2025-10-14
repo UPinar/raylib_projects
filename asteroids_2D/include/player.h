@@ -3,21 +3,22 @@
 
 #include "raylib.h"
 
-#define PLAYER_WIDTH          96.0f
-#define PLAYER_HEIGHT         64.0f
-#define PLAYER_SPEED 300.0f
+#define   PLAYER_TOP_LEFT_X   196.0F
+#define   PLAYER_TOP_LEFT_Y   256.0F
+#define   PLAYER_WIDTH        96.0F
+#define   PLAYER_HEIGHT       64.0F
 
-typedef struct {
-  Vector2 m_location_inside_image;
-  Vector2 m_size;
-  Vector2 m_coordinates;
-  Vector2 m_directions;
-  float m_rotation_degrees;
-} Player_t;
+#define   SPACESHIP_SPEED     500.0F
 
-void PlayerGoRight(Player_t* p_player, float deltaTime);
-void PlayerGoLeft(Player_t* p_player, float deltaTime);
-void PlayerGoUp(Player_t* p_player, float deltaTime);
-void PlayerGoDown(Player_t* p_player, float deltaTime);
+typedef struct Spaceship {
+  Vector2 m_center;
+  Vector2 m_direction;
+  float m_rotation;
+} Spaceship_t;
+
+void SpaceshipGoRight(Spaceship_t* spaceship, float deltaTime);
+void SpaceshipGoLeft(Spaceship_t* spaceship, float deltaTime);
+void SpaceshipGoUp(Spaceship_t* spaceship, float deltaTime);
+void SpaceshipGoDown(Spaceship_t* spaceship, float deltaTime);
 
 #endif // PLAYER_H

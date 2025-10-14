@@ -13,6 +13,8 @@
     "time.h": "c",
     "raylib.h": "c",
     "cstdio": "c",
-    "*.m": "c"
+    "*.m": "c",
+    "player.h": "c",
+    "asteroid.h": "c"
   }
 }

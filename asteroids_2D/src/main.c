@@ -1,169 +1,316 @@
 #include "raylib.h"
-#include "raymath.h"  // Vector2Subtract
+#include "raymath.h"    // Vector2Subtract
+
 #include "player.h"
+#include "bullet.h"
+#include "asteroid.h"
 
-#include <stdio.h>  // printf
+#include <stdio.h>      // printf
+#include <stdlib.h>     // calloc, free
+#include <stdbool.h>    // bool
+#include <math.h>       // atan2f, sqrtf
 
-#define SCREEN_WIDTH          900
-#define SCREEN_HEIGHT         600
-#define SCREEN_FPS            144
+#define SCREEN_WIDTH          1920
+#define SCREEN_HEIGHT         1080
+#define SCREEN_FPS            60
 
-#define CROSSHAIR_WIDTH       24
-#define CROSSHAIR_HEIGHT      24
-#define CROSSHAIR_THICKNESS   3.0f
-#define CROSSHAIR_COLOR       GREEN
+#define CROSSHAIR_SCALE       1.5f
 
-// #define DEBUG
+#define DEBUG
 
+Vector2 GetClampedMousePosition(const Texture2D* crosshair)
+{
+  float halfWidth = (float)crosshair->width * CROSSHAIR_SCALE / 2.0f;
+  float halfHeight = (float)crosshair->height * CROSSHAIR_SCALE / 2.0f;
 
-static void LimitMousePosition(Vector2* p_mousePosition);
-static void UpdatePlayerPosition(Player_t* p_player, float deltaTime);
-static void UpdatePlayerScreenBounds(Player_t* p_player);
-static void UpdatePlayerRotation(Player_t* p_player, Vector2 mousePosition);
+  float mx = (float)GetMouseX();
+  float my = (float)GetMouseY();
 
-static void DrawCrosshair(Vector2 position);
-static void DrawPlayer(const Texture2D* p_playerTexture, const Player_t* p_player);
+  if (mx < halfWidth) 
+    mx = halfWidth;
+  else if (mx > (float)SCREEN_WIDTH - halfWidth) 
+    mx = (float)SCREEN_WIDTH - halfWidth;
 
+  if (my < halfHeight) 
+    my = halfHeight;
+  else if (my > (float)SCREEN_HEIGHT - halfHeight) 
+    my = (float)SCREEN_HEIGHT - halfHeight;
+
+  return (Vector2){ mx, my };
+}
+
+void UpdateSpaceshipRotation(Spaceship_t* spaceship, Vector2 crosshairCenter)
+{
+  Vector2 centerOfTheScreen = { SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
+  Vector2 direction = Vector2Subtract(crosshairCenter, centerOfTheScreen);
+  // atan2f returns radians; convert to degrees for DrawTexturePro
+  float angle = atan2f(direction.y, direction.x) * (180.0f / PI);
+
+  // Raylib's rotation is clockwise-positive when using DrawTexturePro angles in degrees
+  spaceship->m_rotation = angle;
+}
+
+void UpdateBulletsLocations(Bullet_t* bulletsArray)
+{
+  float deltaTime = GetFrameTime();
+
+  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
+  {
+    if (bulletsArray[i].m_active)
+    {
+      bulletsArray[i].m_position.x += bulletsArray[i].m_direction.x * BULLET_SPEED * deltaTime;
+      bulletsArray[i].m_position.y += bulletsArray[i].m_direction.y * BULLET_SPEED * deltaTime;
+
+      // Deactivate if off-screen
+      if (bulletsArray[i].m_position.x < 0 || bulletsArray[i].m_position.x > SCREEN_WIDTH ||
+          bulletsArray[i].m_position.y < 0 || bulletsArray[i].m_position.y > SCREEN_HEIGHT)
+      {
+        bulletsArray[i].m_active = false;
+      }
+    }
+  }
+}
+
+void UpdateSpaceshipPosition(Spaceship_t* spaceship, float deltaTime)
+{
+  if (IsKeyDown(KEY_D))
+    SpaceshipGoRight(spaceship, deltaTime);
+  if (IsKeyDown(KEY_A))
+    SpaceshipGoLeft(spaceship, deltaTime);
+  if (IsKeyDown(KEY_W))
+    SpaceshipGoUp(spaceship, deltaTime);
+  if (IsKeyDown(KEY_S))
+    SpaceshipGoDown(spaceship, deltaTime);
+}
+
+void UpdateAsteroids(Asteroid_t* asteroidsArray)
+{
+  float deltaTime = GetFrameTime();
+
+  for (int i = 0; i < maxAsteroidCount; i++)
+  {
+    if (asteroidsArray[i].m_active)
+    {
+      Asteroid_t* asteroid = &asteroidsArray[i];
+
+      asteroid->m_position.x += asteroid->m_direction.x * asteroid->m_speed * deltaTime;
+      asteroid->m_position.y += asteroid->m_direction.y * asteroid->m_speed * deltaTime;
+
+      // Deactivate Asteroid 
+      if ((asteroid->m_position.x < 0               ||
+          asteroid->m_position.y < 0                ||
+          asteroid->m_position.x > SCREEN_WIDTH     || 
+          asteroid->m_position.y > SCREEN_HEIGHT)   &&
+          asteroid->m_lifetime < 2.0f)
+      {
+        asteroid->m_active = false;
+      }
+      else if (asteroid->m_lifetime < 2.0f)
+      {
+        asteroid->m_lifetime += deltaTime;
+      }
+    }
+  }
+}
+
+void DrawSpaceship(const Texture2D* texture, Spaceship_t* spaceship)
+{
+  DrawTexturePro( *texture,
+    (Rectangle){PLAYER_TOP_LEFT_X, 
+                PLAYER_TOP_LEFT_Y, 
+                PLAYER_WIDTH,
+                PLAYER_HEIGHT },
+    (Rectangle){
+      spaceship->m_center.x,
+      spaceship->m_center.y,
+      PLAYER_WIDTH,
+      PLAYER_HEIGHT},
+    (Vector2){PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2},
+    spaceship->m_rotation,
+    WHITE);
+}
+
+void DrawCrosshair(const Texture2D* texture, Vector2 crosshairCenter)
+{
+  float drawWidth = (float)texture->width * CROSSHAIR_SCALE;
+  float drawHeight = (float)texture->height * CROSSHAIR_SCALE;
+
+  DrawTexturePro( *texture,
+    (Rectangle){0.0f, 0.0f, (float)texture->width, (float)texture->height},
+    (Rectangle){ crosshairCenter.x, crosshairCenter.y, drawWidth, drawHeight },
+    (Vector2){ drawWidth / 2.0f, drawHeight / 2.0f },
+    0.0f,
+    WHITE);
+
+  /*
+    DrawRectangleLines((int)(crosshairCenter.x - drawWidth / 2.0f),
+                      (int)(crosshairCenter.y - drawHeight / 2.0f),
+                      (int)drawWidth,
+                      (int)drawHeight,
+                      GREEN);
+  */
+}
+
+void FindFirstAvailableBulletAndShoot(Bullet_t* bulletsArray, Vector2 spaceshipPosition, Vector2 crosshairCenter)
+{  
+  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
+  {
+    if (!bulletsArray[i].m_active)
+    {
+      bulletsArray[i].m_active = true;
+      bulletsArray[i].m_position = spaceshipPosition;
+      bulletsArray[i].m_direction = Vector2Normalize(Vector2Subtract(crosshairCenter, spaceshipPosition));
+      break;
+    } 
+  }
+}
+
+void DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 crosshairCenter)
+{
+  float deltaTime = GetFrameTime();
+
+  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
+  {
+    if (bulletsArray[i].m_active)
+    {      
+      Bullet_t* bullet = &bulletsArray[i];
+
+      bullet->m_position.x += bullet->m_direction.x * BULLET_SPEED * deltaTime;
+      bullet->m_position.y += bullet->m_direction.y * BULLET_SPEED * deltaTime;
+
+      if (bullet->m_position.x < 0 || bullet->m_position.x > SCREEN_WIDTH ||
+          bullet->m_position.y < 0 || bullet->m_position.y > SCREEN_HEIGHT)
+      {
+        bullet->m_active = false;
+      }
+    }
+  }
+
+  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
+  {
+    if (bulletsArray[i].m_active)
+    {
+      DrawTexturePro( *texture,
+        (Rectangle){ BULLET_TOP_LEFT_X, 
+                     BULLET_TOP_LEFT_Y, 
+                     BULLET_WIDTH,
+                     BULLET_HEIGHT },
+        (Rectangle){
+          bulletsArray[i].m_position.x,
+          bulletsArray[i].m_position.y,
+          BULLET_WIDTH,
+          BULLET_HEIGHT},
+        (Vector2){BULLET_WIDTH / 2, BULLET_HEIGHT / 2},
+        0.0f,
+        WHITE);
+    }
+  }
+}
 
 int main(void)
 {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Fresh Start Files");
+
+  int monitorCount = GetMonitorCount();
+  if (monitorCount > 1)
+    SetWindowMonitor(1);
+  
   SetTargetFPS(SCREEN_FPS);
+  ToggleBorderlessWindowed();
   DisableCursor();
 
+  Texture2D texture = LoadTexture("assets/asteroids.png");
+  Texture2D crosshairTexture = LoadTexture("assets/crosshair.png");
 
-  Texture2D playerTexture = LoadTexture("assets/asteroids-2x.png");
-  Player_t player = {
-    .m_location_inside_image = { 288.0f, 256.0f },
-    .m_size = { PLAYER_WIDTH, PLAYER_HEIGHT },
-    .m_coordinates = {  SCREEN_WIDTH / 2 - PLAYER_WIDTH / 2, 
-                        SCREEN_HEIGHT / 2 - PLAYER_HEIGHT / 2 },
+  Spaceship_t spaceship = {
+    .m_center = (Vector2){ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
+    .m_rotation = 0.0f,
   };
 
-  float deltaTime = 0.0f;
-  Vector2 mousePosition = { 0 };
+  Bullet_t* bulletsArray = (Bullet_t*)calloc(MAX_ACTIVE_BULLET_COUNT, sizeof(Bullet_t));
+  if (bulletsArray == NULL)
+  {
+    CloseWindow();
+    return -1;
+  }
+
+  int maxAsteroidCount = 5;
+  Asteroid_t* asteroidsArray = (Asteroid_t*)calloc(maxAsteroidCount, sizeof(Asteroid_t));
+  if( asteroidsArray == NULL)
+  {
+    free(bulletsArray);
+    CloseWindow();
+    return -1;
+  }
+
+  Vector2 crosshairCenter = { 0 };
+
+  // TODO: i want to setup a timer and realloc by 1 asteroid every 2 second
   
+  // float asteroidSpawnTimer = 0.0f;
+
   while (!WindowShouldClose())
   {
-    deltaTime       = GetFrameTime();
-    mousePosition   = GetMousePosition();
-
     BeginDrawing();
     ClearBackground(BLACK);
 
-    // ------------------ UPDATE ------------------
-    LimitMousePosition(&mousePosition);
-    UpdatePlayerPosition(&player, deltaTime);
-    UpdatePlayerScreenBounds(&player);
-    UpdatePlayerRotation(&player, mousePosition);
+    // -------------- UPDATING --------------
+    crosshairCenter = GetClampedMousePosition(&crosshairTexture);
+    UpdateSpaceshipRotation(&spaceship, crosshairCenter);
+    UpdateSpaceshipPosition(&spaceship, GetFrameTime());
 
-    // ------------------ DRAW ------------------
-    DrawCrosshair(mousePosition);
-    DrawPlayer(&playerTexture, &player);
+
+    // ilk tur 5 adet asteroid spaw edilecek.
+    // bu asteroidlerin m_active si true olacak.
+    // eger ekranin disina cikma durumu veya patlama durumu ol
+
+    /*
+      // -------------- SPAWNING ASTEROIDS BY TIMER --------------
+      asteroidSpawnTimer += GetFrameTime();
+      
+      if (asteroidSpawnTimer >= 2.0f)
+      {
+        asteroidSpawnTimer = 0.0f;
+        asteroidsArray = realloc(asteroidsArray, (maxAsteroidCount + 1) * sizeof(Asteroid_t));
+        if (asteroidsArray == NULL)
+        {
+          free(bulletsArray);
+          CloseWindow();
+          return -1;
+        }
+        
+
+        UpdateAsteroids(asteroidsArray);
+        ++maxAsteroidCount;
+      }
+    */
+    UpdateBulletsLocations(bulletsArray);
+
+    // -------------- DRAWING --------------
+    DrawSpaceship(&texture, &spaceship);
+    DrawCrosshair(&crosshairTexture, crosshairCenter);
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+      FindFirstAvailableBulletAndShoot(bulletsArray, spaceship.m_center, crosshairCenter);
+
+    DrawBullets(&texture, bulletsArray, crosshairCenter);
+    // DrawAsteroids(&texture, asteroidsArray);
+
+    DrawLine(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT, RED);
+    DrawLine(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, RED);
+    DrawLine(spaceship.m_center.x, spaceship.m_center.y, (int)crosshairCenter.x, (int)crosshairCenter.y, YELLOW);
+    DrawFPS(10, 10);
 
     EndDrawing();
   }
-  
-  UnloadTexture(playerTexture);
+
+  // --------------------- CLEANUP ---------------------
+
+  free(bulletsArray);
+  free(asteroidsArray);
+  UnloadTexture(texture);
+  UnloadTexture(crosshairTexture);
   CloseWindow();
   return 0;
 }
 
-static void LimitMousePosition(Vector2* p_mousePosition)
-{
-  if (p_mousePosition->x < 0.0f)
-    p_mousePosition->x = 0.0f;
-  else if (p_mousePosition->x > SCREEN_WIDTH)
-    p_mousePosition->x = (float)SCREEN_WIDTH;
-
-  if (p_mousePosition->y < 0)
-    p_mousePosition->y = 0.0f;
-  else if (p_mousePosition->y > SCREEN_HEIGHT)
-    p_mousePosition->y = SCREEN_HEIGHT;
-
-  #ifdef DEBUG
-    printf("mouse x = %f, mouse y = %f\n", p_mousePosition->x, p_mousePosition->y);
-  #endif
-}
-
-static void UpdatePlayerScreenBounds(Player_t* p_player)
-{
-  float playerLeft    = p_player->m_coordinates.x - p_player->m_size.x / 2;
-  float playerRight   = p_player->m_coordinates.x + p_player->m_size.x / 2;
-  float playerBottom  = p_player->m_coordinates.y + p_player->m_size.y / 2;
-  float playerTop     = p_player->m_coordinates.y - p_player->m_size.y / 2;
-
-  if (playerLeft < 0)
-    p_player->m_coordinates.x = p_player->m_size.x / 2;
-  else if (playerRight > SCREEN_WIDTH)
-    p_player->m_coordinates.x = SCREEN_WIDTH - p_player->m_size.x / 2;
-
-  if (playerTop < 0)
-    p_player->m_coordinates.y = p_player->m_size.y / 2;
-  else if (playerBottom > SCREEN_HEIGHT)
-    p_player->m_coordinates.y = SCREEN_HEIGHT - p_player->m_size.y / 2;
-}
-
-static void UpdatePlayerRotation(Player_t* p_player, Vector2 mousePosition)
-{
-  Vector2 direction = Vector2Subtract(mousePosition, p_player->m_coordinates);
-  p_player->m_rotation_degrees = atan2f(direction.y, direction.x) * (180.0f / PI);
-}
-
-static void UpdatePlayerPosition(Player_t* p_player, float deltaTime)
-{
-  if (IsKeyDown(KEY_D))
-    PlayerGoRight(p_player, deltaTime);
-  if (IsKeyDown(KEY_A))
-    PlayerGoLeft(p_player, deltaTime);
-  if (IsKeyDown(KEY_W))
-    PlayerGoUp(p_player, deltaTime);
-  if (IsKeyDown(KEY_S))
-    PlayerGoDown(p_player, deltaTime);
-}
-
-static void DrawPlayer(const Texture2D* p_playerTexture, const Player_t* p_player)
-{
-  DrawTexturePro( *p_playerTexture, 
-                  (Rectangle){p_player->m_location_inside_image.x, 
-                              p_player->m_location_inside_image.y, 
-                              p_player->m_size.x, 
-                              p_player->m_size.y}, 
-                  (Rectangle){p_player->m_coordinates.x, 
-                              p_player->m_coordinates.y, 
-                              p_player->m_size.x, 
-                              p_player->m_size.y}, 
-                  (Vector2){p_player->m_size.x / 2, p_player->m_size.y / 2}, 
-                  p_player->m_rotation_degrees, 
-                  WHITE);
-}
-
-static void DrawCrosshair(Vector2 mousePosition)
-{
-  // Clamp the crosshair center position for drawing so the whole crosshair stays visible
-  const float halfWidth = (float)CROSSHAIR_WIDTH / 2.0f;
-  const float halfHeight = (float)CROSSHAIR_HEIGHT / 2.0f;
-  
-  // Define the valid bounds for the crosshair center
-  Vector2 minBounds = { halfWidth, halfHeight };
-  Vector2 maxBounds = { SCREEN_WIDTH - halfWidth, SCREEN_HEIGHT - halfHeight };
-  
-  // Clamp the mouse position to keep crosshair fully on screen
-  Vector2 center = Vector2Clamp(mousePosition, minBounds, maxBounds);
-  
-  // Define offsets for crosshair arms using vector math
-  Vector2 horizontalOffset = { halfWidth, 0.0f };
-  Vector2 verticalOffset = { 0.0f, halfHeight };
-  
-  // Draw horizontal line (left to right)
-  DrawLineEx(Vector2Subtract(center, horizontalOffset), 
-             Vector2Add(center, horizontalOffset), 
-             CROSSHAIR_THICKNESS,
-             CROSSHAIR_COLOR);
-  
-  // Draw vertical line (top to bottom)
-  DrawLineEx(Vector2Subtract(center, verticalOffset), 
-             Vector2Add(center, verticalOffset), 
-             CROSSHAIR_THICKNESS,
-             CROSSHAIR_COLOR);
-}
