@@ -1,12 +1,12 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef SPACESHIP_H
+#define SPACESHIP_H
 
 #include "raylib.h"
 
-#define   PLAYER_TOP_LEFT_X   196.0F
-#define   PLAYER_TOP_LEFT_Y   256.0F
-#define   PLAYER_WIDTH        96.0F
-#define   PLAYER_HEIGHT       64.0F
+#define   SPACESHIP_TOP_LEFT_X   196.0F
+#define   SPACESHIP_TOP_LEFT_Y   256.0F
+#define   SPACESHIP_WIDTH        96.0F
+#define   SPACESHIP_HEIGHT       64.0F
 
 #define   SPACESHIP_SPEED     500.0F
 

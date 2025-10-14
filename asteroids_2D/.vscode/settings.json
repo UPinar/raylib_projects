@@ -17,6 +17,7 @@
     "player.h": "c",
     "asteroid.h": "c",
     "stdio.h": "c",
-    "raymath.h": "c"
+    "raymath.h": "c",
+    "spaceship.h": "c"
   }
 }

@@ -1,13 +1,13 @@
-#include "player.h"
-#include "raymath.h"  // Vector2Normalize
+#include "spaceship.h"
+#include "raymath.h"      // Vector2Normalize
 
 #define SCREEN_WIDTH          1920
 #define SCREEN_HEIGHT         1080
 
 static void CheckSpaceshipBounds(Spaceship_t* spaceship)
 {
-  float halfWidth = PLAYER_WIDTH / 2.0f;
-  float halfHeight = PLAYER_HEIGHT / 2.0f;
+  float halfWidth = SPACESHIP_WIDTH / 2.0f;
+  float halfHeight = SPACESHIP_HEIGHT / 2.0f;
 
 
   if (spaceship->m_center.x + halfWidth > SCREEN_WIDTH)

@@ -1,7 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"    // Vector2Subtract
 
-#include "player.h"
+#include "spaceship.h"
 #include "bullet.h"
 #include "asteroid.h"
 
@@ -17,6 +17,13 @@
 #define CROSSHAIR_SCALE       1.5f
 
 #define DEBUG
+
+// [+] TODO: Olme mekanigi eklenilecek.
+// [-] TODO: Asteroidlerin LARGE -> 2 MEDIUM -> 2 SMALL -> 0 sekilde bolunmesi eklenilecek.
+// [-] TODO: Asteroidlerin rotasyon mekanigi eklenilecek
+// [-] TODO: Isinlanma mekanigi eklenilecek
+// [-] TODO: Score tablosu eklenilecek.
+// [-] TODO: Olme mekanigi sonrasi ekran ortasinda "Game Over" yazisi gosterilecek.
 
 size_t maxAsteroidCount = 100;
 
@@ -188,19 +195,87 @@ void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
     }
 }
 
+void CheckCollisionsBetweenBulletsAndAsteroids(Bullet_t* bulletsArray, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+{
+  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
+  {
+    if (bulletsArray[i].m_active)
+    {
+      Rectangle bulletRect = {
+        bulletsArray[i].m_position.x - BULLET_WIDTH / 2,
+        bulletsArray[i].m_position.y - BULLET_HEIGHT / 2,
+        BULLET_WIDTH,
+        BULLET_HEIGHT
+      };
+
+      for (int j = 0; j < currentAsteroidCount; j++)
+      {
+        if (asteroidsArray[j].m_active)
+        {
+          Rectangle asteroidRect = {
+            asteroidsArray[j].m_position.x - asteroidsArray[j].m_width / 2,
+            asteroidsArray[j].m_position.y - asteroidsArray[j].m_height / 2,
+            asteroidsArray[j].m_width,
+            asteroidsArray[j].m_height
+          };
+
+          if (CheckCollisionRecs(bulletRect, asteroidRect))
+          {
+            bulletsArray[i].m_active = false;
+            asteroidsArray[j].m_active = false;
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+void CheckIfSpaceshipIsDead(Spaceship_t* spaceship, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+{
+  Rectangle spaceshipRect = {
+    spaceship->m_center.x - SPACESHIP_WIDTH / 2,
+    spaceship->m_center.y - SPACESHIP_HEIGHT / 2,
+    SPACESHIP_WIDTH,
+    SPACESHIP_HEIGHT
+  };
+
+  Rectangle asteroidRect = { 0 };
+
+  for (int i = 0; i < currentAsteroidCount; i++)
+  {
+    if (asteroidsArray[i].m_active)
+    {
+      asteroidRect = (Rectangle){
+        asteroidsArray[i].m_position.x - asteroidsArray[i].m_width / 2,
+        asteroidsArray[i].m_position.y - asteroidsArray[i].m_height / 2,
+        asteroidsArray[i].m_width,
+        asteroidsArray[i].m_height
+      };
+
+      if (CheckCollisionRecs(spaceshipRect, asteroidRect))
+      {
+        printf("Game Over! The spaceship has collided with an asteroid.\n");
+        spaceship->m_center = (Vector2){ -100.0f, -100.0f };
+        break;
+      }
+    }
+  }
+}
+
 void DrawSpaceship(const Texture2D* texture, Spaceship_t* spaceship)
 {
   DrawTexturePro( *texture,
-    (Rectangle){PLAYER_TOP_LEFT_X, 
-                PLAYER_TOP_LEFT_Y, 
-                PLAYER_WIDTH,
-                PLAYER_HEIGHT },
+    (Rectangle){SPACESHIP_TOP_LEFT_X, 
+                SPACESHIP_TOP_LEFT_Y, 
+                SPACESHIP_WIDTH,
+                SPACESHIP_HEIGHT },
     (Rectangle){
       spaceship->m_center.x,
       spaceship->m_center.y,
-      PLAYER_WIDTH,
-      PLAYER_HEIGHT},
-    (Vector2){PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2},
+      SPACESHIP_WIDTH,
+      SPACESHIP_HEIGHT},
+    (Vector2){SPACESHIP_WIDTH / 2, SPACESHIP_HEIGHT / 2},
     spaceship->m_rotation,
     WHITE);
 }
@@ -278,6 +353,14 @@ void DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 cross
         (Vector2){BULLET_WIDTH / 2, BULLET_HEIGHT / 2},
         0.0f,
         WHITE);
+      
+      // Draw rectangle around the bullet
+      DrawRectangleLines(
+        (int)(bulletsArray[i].m_position.x - BULLET_WIDTH / 2),
+        (int)(bulletsArray[i].m_position.y - BULLET_HEIGHT / 2),
+        (int)BULLET_WIDTH,
+        (int)BULLET_HEIGHT,
+        GREEN);
     }
   }
 }
@@ -361,18 +444,19 @@ int main(void)
     // -------------- SPAWNING ASTEROIDS BY TIMER --------------
     asteroidSpawnTimer += GetFrameTime();
 
-    if (asteroidSpawnTimer >= 5.0f)
+    if (asteroidSpawnTimer >= 2.0f)
     {
       asteroidSpawnTimer = 0.0f;
-      Asteroid_t* tempAsteroidArray = realloc(asteroidsArray, (currentAsteroidCount + 1) * sizeof(Asteroid_t));
+      Asteroid_t* tempAsteroidArray = realloc(asteroidsArray, (++currentAsteroidCount) * sizeof(Asteroid_t));
       if (tempAsteroidArray == NULL)
       {
+        free(asteroidsArray);
         free(bulletsArray);
         CloseWindow();
         return -1;
       }
       asteroidsArray = tempAsteroidArray;
-      ++currentAsteroidCount;
+      printf("Asteroid count increased to: %zu\n", currentAsteroidCount);
     }
     
     UpdateBulletsLocations(bulletsArray);
@@ -384,9 +468,13 @@ int main(void)
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
       FindFirstAvailableBulletAndShoot(bulletsArray, spaceship.m_center, crosshairCenter);
+      
+    CheckCollisionsBetweenBulletsAndAsteroids(bulletsArray, asteroidsArray, currentAsteroidCount);
+    CheckIfSpaceshipIsDead(&spaceship, asteroidsArray, currentAsteroidCount);
 
     DrawBullets(&texture, bulletsArray, crosshairCenter);
     DrawAsteroids(&texture, asteroidsArray, currentAsteroidCount);
+    
 
     DrawLine(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT, RED);
     DrawLine(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, RED);

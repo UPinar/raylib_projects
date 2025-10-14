@@ -23,15 +23,13 @@
 #define   ASTEROID_MAX_SPEED              300.0F
 
 
-typedef enum AsteroidSize
-{
+typedef enum AsteroidSize {
   ASTEROID_SIZE_LARGE,
   ASTEROID_SIZE_MEDIUM,
   ASTEROID_SIZE_SMALL
 } AsteroidSize_t;
 
-typedef struct Asteroid
-{
+typedef struct Asteroid {
   Vector2           m_direction;
   Vector2           m_position; 
   Vector2           m_image_location_x_y;

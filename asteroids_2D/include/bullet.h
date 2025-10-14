@@ -12,8 +12,7 @@
 
 #define   BULLET_SPEED                  500.0F
 
-typedef struct Bullet
-{
+typedef struct Bullet {
   Vector2   m_direction;
   Vector2   m_position; 
   bool      m_active;
