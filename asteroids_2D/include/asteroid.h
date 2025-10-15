@@ -19,10 +19,10 @@
 #define   ASTEROID_SMALL_WIDTH            64.0F
 #define   ASTEROID_SMALL_HEIGHT           64.0F
     
-#define   ASTEROID_MIN_SPEED              100.0F  
-#define   ASTEROID_MAX_SPEED              300.0F
+#define   ASTEROID_MIN_SPEED              70.0F  
+#define   ASTEROID_MAX_SPEED              250.0F
 
-#define   ASTEROID_SPAWN_TIMER            0.5F
+#define   ASTEROID_SPAWN_TIMER            5.0F
 
 
 typedef enum AsteroidSize {
@@ -39,8 +39,11 @@ typedef struct Asteroid {
   float             m_height;
   float             m_speed;
   float             m_lifetime;
+  float             m_rotation_angle; 
+  float             m_rotation_speed; 
   AsteroidSize_t    m_size;
   bool              m_active;
+  bool              m_is_splitted;
 } Asteroid_t;
 
 #endif // ASTEROID_H
