@@ -3,17 +3,17 @@
 
 #include "raylib.h"
 
-#define   SPACESHIP_TOP_LEFT_X   196.0F
-#define   SPACESHIP_TOP_LEFT_Y   256.0F
-#define   SPACESHIP_WIDTH        96.0F
-#define   SPACESHIP_HEIGHT       64.0F
+#define   SPACESHIP_TOP_LEFT_X    196.0F
+#define   SPACESHIP_TOP_LEFT_Y    256.0F
+#define   SPACESHIP_WIDTH         96.0F
+#define   SPACESHIP_HEIGHT        64.0F
 
-#define   SPACESHIP_SPEED     500.0F
+#define   SPACESHIP_SPEED         500.0F
 
 typedef struct Spaceship {
   Vector2 m_center;
   Vector2 m_direction;
-  float m_rotation;
+  float m_rotation_angle;
 } Spaceship_t;
 
 void SpaceshipGoRight(Spaceship_t* spaceship, float deltaTime);

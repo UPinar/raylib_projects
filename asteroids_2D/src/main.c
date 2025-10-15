@@ -12,7 +12,7 @@
 
 #define SCREEN_WIDTH          1920
 #define SCREEN_HEIGHT         1080
-#define SCREEN_FPS            60
+#define SCREEN_FPS            144
 
 #define CROSSHAIR_SCALE       1.5f
 
@@ -23,58 +23,62 @@
 // [-] TODO: Asteroidlerin rotasyon mekanigi eklenilecek
 // [-] TODO: Isinlanma mekanigi eklenilecek
 // [-] TODO: Score tablosu eklenilecek.
-// [-] TODO: Olme mekanigi sonrasi ekran ortasinda "Game Over" yazisi gosterilecek.
-
-size_t maxAsteroidCount = 100;
 
 Vector2 GetClampedMousePosition(const Texture2D* crosshair)
 {
-  float halfWidth = (float)crosshair->width * CROSSHAIR_SCALE / 2.0f;
-  float halfHeight = (float)crosshair->height * CROSSHAIR_SCALE / 2.0f;
+  float crosshairHalfWidth   = (float)crosshair->width * CROSSHAIR_SCALE / 2.0f;
+  float crosshairHalfHeight  = (float)crosshair->height * CROSSHAIR_SCALE / 2.0f;
 
-  float mx = (float)GetMouseX();
-  float my = (float)GetMouseY();
+  float mouseX = (float)GetMouseX();
+  float mouseY = (float)GetMouseY();
 
-  if (mx < halfWidth) 
-    mx = halfWidth;
-  else if (mx > (float)SCREEN_WIDTH - halfWidth) 
-    mx = (float)SCREEN_WIDTH - halfWidth;
+  if (mouseX < crosshairHalfWidth) 
+    mouseX = crosshairHalfWidth;
+  else if (mouseX > (float)SCREEN_WIDTH - crosshairHalfWidth) 
+    mouseX = (float)SCREEN_WIDTH - crosshairHalfWidth;
 
-  if (my < halfHeight) 
-    my = halfHeight;
-  else if (my > (float)SCREEN_HEIGHT - halfHeight) 
-    my = (float)SCREEN_HEIGHT - halfHeight;
+  if (mouseY < crosshairHalfHeight) 
+    mouseY = crosshairHalfHeight;
+  else if (mouseY > (float)SCREEN_HEIGHT - crosshairHalfHeight) 
+    mouseY = (float)SCREEN_HEIGHT - crosshairHalfHeight;
 
-  return (Vector2){ mx, my };
+  return (Vector2){ mouseX, mouseY };
 }
 
 void UpdateSpaceshipRotation(Spaceship_t* spaceship, Vector2 crosshairCenter)
 {
   Vector2 centerOfTheScreen = { SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
-  Vector2 direction = Vector2Subtract(crosshairCenter, centerOfTheScreen);
+  Vector2 spaceshipDirection = Vector2Subtract(crosshairCenter, centerOfTheScreen);
+
   // atan2f returns radians; convert to degrees for DrawTexturePro
-  float angle = atan2f(direction.y, direction.x) * (180.0f / PI);
+  float rotationAngle = atan2f(spaceshipDirection.y, spaceshipDirection.x) * (180.0f / PI);
 
   // Raylib's rotation is clockwise-positive when using DrawTexturePro angles in degrees
-  spaceship->m_rotation = angle;
+  spaceship->m_rotation_angle = rotationAngle;
 }
 
 void UpdateBulletsLocations(Bullet_t* bulletsArray)
 {
   float deltaTime = GetFrameTime();
+  Bullet_t* bullet = nullptr;
 
   for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
   {
     if (bulletsArray[i].m_active)
     {
-      bulletsArray[i].m_position.x += bulletsArray[i].m_direction.x * BULLET_SPEED * deltaTime;
-      bulletsArray[i].m_position.y += bulletsArray[i].m_direction.y * BULLET_SPEED * deltaTime;
+      bullet = &bulletsArray[i];
 
-      // Deactivate if off-screen
-      if (bulletsArray[i].m_position.x < 0 || bulletsArray[i].m_position.x > SCREEN_WIDTH ||
-          bulletsArray[i].m_position.y < 0 || bulletsArray[i].m_position.y > SCREEN_HEIGHT)
+      // Update bullet position
+      bullet->m_position.x += bullet->m_direction.x * BULLET_SPEED * deltaTime;
+      bullet->m_position.y += bullet->m_direction.y * BULLET_SPEED * deltaTime;
+
+      // Deactivate bullet when it goes off-screen
+      if (bullet->m_position.x < 0              || 
+          bullet->m_position.x > SCREEN_WIDTH   ||
+          bullet->m_position.y < 0              || 
+          bullet->m_position.y > SCREEN_HEIGHT)
       {
-        bulletsArray[i].m_active = false;
+        bullet->m_active = false;
       }
     }
   }
@@ -114,22 +118,21 @@ static Vector2 GetRandomAsteroidSpawnLocation(void)
   float y = 0.0f;
 
   int side = GetRandomValue(0, 3); 
-
   switch (side)
   {
-    case 0: // left
+    case 0: // left side
       x = GetRandomValue(-200, 0);
       y = GetRandomValue(-200, SCREEN_HEIGHT + 200);
       break;
-    case 1: // right
+    case 1: // right side
       x = GetRandomValue(SCREEN_WIDTH, SCREEN_WIDTH + 200);
       y = GetRandomValue(-200, SCREEN_HEIGHT + 200);
       break;
-    case 2: // top
+    case 2: // top side
       x = GetRandomValue(-200, SCREEN_WIDTH + 200);
       y = GetRandomValue(-200, 0);
       break;
-    case 3: // bottom
+    case 3: // bottom side
       x = GetRandomValue(-200, SCREEN_WIDTH + 200);
       y = GetRandomValue(SCREEN_HEIGHT, SCREEN_HEIGHT + 200);
       break;
@@ -138,11 +141,10 @@ static Vector2 GetRandomAsteroidSpawnLocation(void)
   return (Vector2){ x, y };
 }
 
-void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+static void DeactivateAsteroidsIfOutOfScreen(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
 {
   float deltaTime = GetFrameTime();
 
-  // Deactivate asteroids that are out of screen for more than 2 seconds
   for (int i = 0; i < currentAsteroidCount; i++)
     if (asteroidsArray[i].m_active)
     {
@@ -157,9 +159,10 @@ void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
       else if (asteroidIsOutOfScreen && asteroid->m_lifetime >= 2.0f)
         asteroid->m_active = false;
     }
+}
 
-
-  // Spawn new asteroids if there is an inactive one
+static void SpawnNewAsteroidsIfThereAreInactive(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+{
   for (int i = 0; i < currentAsteroidCount; i++)
     if (!asteroidsArray[i].m_active)
     {
@@ -195,7 +198,15 @@ void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
     }
 }
 
-void CheckCollisionsBetweenBulletsAndAsteroids(Bullet_t* bulletsArray, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+void UpdateAsteroids(Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+{
+  DeactivateAsteroidsIfOutOfScreen(asteroidsArray, currentAsteroidCount);
+  SpawnNewAsteroidsIfThereAreInactive(asteroidsArray, currentAsteroidCount);
+}
+
+void CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray, 
+                                                Asteroid_t* asteroidsArray, 
+                                                size_t currentAsteroidCount)
 {
   for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
   {
@@ -208,11 +219,12 @@ void CheckCollisionsBetweenBulletsAndAsteroids(Bullet_t* bulletsArray, Asteroid_
         BULLET_HEIGHT
       };
 
+      Rectangle asteroidRect = { 0 };
+
       for (int j = 0; j < currentAsteroidCount; j++)
-      {
         if (asteroidsArray[j].m_active)
         {
-          Rectangle asteroidRect = {
+          asteroidRect = (Rectangle){
             asteroidsArray[j].m_position.x - asteroidsArray[j].m_width / 2,
             asteroidsArray[j].m_position.y - asteroidsArray[j].m_height / 2,
             asteroidsArray[j].m_width,
@@ -226,12 +238,14 @@ void CheckCollisionsBetweenBulletsAndAsteroids(Bullet_t* bulletsArray, Asteroid_
             break;
           }
         }
-      }
     }
   }
 }
 
-void CheckIfSpaceshipIsDead(Spaceship_t* spaceship, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
+void CheckIfSpaceshipIsDead(Spaceship_t* spaceship, 
+                            Asteroid_t* asteroidsArray, 
+                            size_t currentAsteroidCount, 
+                            bool* shouldRestart)
 {
   Rectangle spaceshipRect = {
     spaceship->m_center.x - SPACESHIP_WIDTH / 2,
@@ -254,12 +268,33 @@ void CheckIfSpaceshipIsDead(Spaceship_t* spaceship, Asteroid_t* asteroidsArray, 
       };
 
       if (CheckCollisionRecs(spaceshipRect, asteroidRect))
-      {
-        printf("Game Over! The spaceship has collided with an asteroid.\n");
-        spaceship->m_center = (Vector2){ -100.0f, -100.0f };
-        break;
-      }
+        *shouldRestart = true;
     }
+  }
+}
+
+void DrawBackgroundImage(Texture2D* texture, float scrollOffset)
+{
+  // Draw the background with horizontal scrolling effect
+  // We draw the texture twice to create a seamless loop
+  
+  int textureWidth = texture->width;
+  int textureHeight = texture->height;
+
+  // Calculate how many times we need to tile the texture to cover the screen width
+  int tilesNeeded = (SCREEN_WIDTH / textureWidth) + 2; 
+
+  for (int i = 0; i < tilesNeeded; i++)
+  {
+    float xPos = (i * textureWidth) - scrollOffset;
+
+    // Draw the texture scaled to fit screen height, maintaining aspect ratio
+    DrawTexturePro(*texture,
+                   (Rectangle){ 0.0f, 0.0f, (float)textureWidth, (float)textureHeight },
+                   (Rectangle){ xPos, 0.0f, (float)textureWidth, (float)SCREEN_HEIGHT },
+                   (Vector2){ 0.0f, 0.0f },
+                   0.0f,
+                   WHITE);
   }
 }
 
@@ -276,27 +311,30 @@ void DrawSpaceship(const Texture2D* texture, Spaceship_t* spaceship)
       SPACESHIP_WIDTH,
       SPACESHIP_HEIGHT},
     (Vector2){SPACESHIP_WIDTH / 2, SPACESHIP_HEIGHT / 2},
-    spaceship->m_rotation,
-    WHITE);
+    spaceship->m_rotation_angle,
+    (Color){ 247, 102, 54, 255 }
+  );
 }
 
 void DrawCrosshair(const Texture2D* texture, Vector2 crosshairCenter)
 {
-  float drawWidth = (float)texture->width * CROSSHAIR_SCALE;
-  float drawHeight = (float)texture->height * CROSSHAIR_SCALE;
+  float crosshairWidth = (float)texture->width * CROSSHAIR_SCALE;
+  float crosshairHeight = (float)texture->height * CROSSHAIR_SCALE;
 
   DrawTexturePro( *texture,
-    (Rectangle){0.0f, 0.0f, (float)texture->width, (float)texture->height},
-    (Rectangle){ crosshairCenter.x, crosshairCenter.y, drawWidth, drawHeight },
-    (Vector2){ drawWidth / 2.0f, drawHeight / 2.0f },
-    0.0f,
-    WHITE);
+                  (Rectangle){ 0.0f, 0.0f, (float)texture->width, (float)texture->height },
+                  (Rectangle){ crosshairCenter.x, crosshairCenter.y, crosshairWidth, crosshairHeight },
+                  (Vector2){ crosshairWidth / 2.0f, crosshairHeight / 2.0f },
+                  0.0f,
+                  WHITE);
+
+  DrawPixel(crosshairCenter.x, crosshairCenter.y, WHITE);
 
   /*
-    DrawRectangleLines((int)(crosshairCenter.x - drawWidth / 2.0f),
-                      (int)(crosshairCenter.y - drawHeight / 2.0f),
-                      (int)drawWidth,
-                      (int)drawHeight,
+    DrawRectangleLines((int)(crosshairCenter.x - crosshairWidth / 2.0f),
+                      (int)(crosshairCenter.y - crosshairHeight / 2.0f),
+                      (int)crosshairWidth,
+                      (int)crosshairHeight,
                       GREEN);
   */
 }
@@ -304,40 +342,18 @@ void DrawCrosshair(const Texture2D* texture, Vector2 crosshairCenter)
 void FindFirstAvailableBulletAndShoot(Bullet_t* bulletsArray, Vector2 spaceshipPosition, Vector2 crosshairCenter)
 {  
   for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
-  {
     if (!bulletsArray[i].m_active)
     {
       bulletsArray[i].m_active = true;
       bulletsArray[i].m_position = spaceshipPosition;
       bulletsArray[i].m_direction = Vector2Normalize(Vector2Subtract(crosshairCenter, spaceshipPosition));
       break;
-    } 
-  }
+    }
 }
 
 void DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 crosshairCenter)
 {
-  float deltaTime = GetFrameTime();
-
   for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
-  {
-    if (bulletsArray[i].m_active)
-    {      
-      Bullet_t* bullet = &bulletsArray[i];
-
-      bullet->m_position.x += bullet->m_direction.x * BULLET_SPEED * deltaTime;
-      bullet->m_position.y += bullet->m_direction.y * BULLET_SPEED * deltaTime;
-
-      if (bullet->m_position.x < 0 || bullet->m_position.x > SCREEN_WIDTH ||
-          bullet->m_position.y < 0 || bullet->m_position.y > SCREEN_HEIGHT)
-      {
-        bullet->m_active = false;
-      }
-    }
-  }
-
-  for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
-  {
     if (bulletsArray[i].m_active)
     {
       DrawTexturePro( *texture,
@@ -354,15 +370,16 @@ void DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 cross
         0.0f,
         WHITE);
       
-      // Draw rectangle around the bullet
+      /*
       DrawRectangleLines(
         (int)(bulletsArray[i].m_position.x - BULLET_WIDTH / 2),
         (int)(bulletsArray[i].m_position.y - BULLET_HEIGHT / 2),
         (int)BULLET_WIDTH,
         (int)BULLET_HEIGHT,
         GREEN);
+      */
     }
-  }
+
 }
 
 void DrawAsteroids(const Texture2D* texture, Asteroid_t* asteroidsArray, size_t currentAsteroidCount)
@@ -385,10 +402,20 @@ void DrawAsteroids(const Texture2D* texture, Asteroid_t* asteroidsArray, size_t 
           asteroid->m_height},
         (Vector2){ asteroid->m_width / 2, asteroid->m_height / 2},
         0.0f,
-        WHITE);
+        (Color){ 162, 242, 16, 255 });
     }
   }
 }
+
+void CleanUp(Bullet_t* bulletsArray, Asteroid_t* asteroidsArray, Texture2D* texture, Texture2D* crosshairTexture, Texture2D* galaxyTexture)
+{
+  free(bulletsArray);
+  free(asteroidsArray);
+  UnloadTexture(*texture);
+  UnloadTexture(*crosshairTexture);
+  UnloadTexture(*galaxyTexture);
+}
+
 
 int main(void)
 {
@@ -402,94 +429,113 @@ int main(void)
   ToggleBorderlessWindowed();
   DisableCursor();
 
-  Texture2D texture = LoadTexture("assets/asteroids.png");
-  Texture2D crosshairTexture = LoadTexture("assets/crosshair.png");
+  bool shouldRestart = true;
 
-  Spaceship_t spaceship = {
-    .m_center = (Vector2){ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
-    .m_rotation = 0.0f,
-  };
-
-  Bullet_t* bulletsArray = (Bullet_t*)calloc(MAX_ACTIVE_BULLET_COUNT, sizeof(Bullet_t));
-  if (bulletsArray == NULL)
+  while (!WindowShouldClose() && shouldRestart)
   {
-    CloseWindow();
-    return -1;
-  }
+    shouldRestart = false;
+    
+    Texture2D texture = LoadTexture("assets/asteroids.png");
+    Texture2D crosshairTexture = LoadTexture("assets/crosshair.png");
+    Texture2D galaxyTexture = LoadTexture("assets/galaxy.jpg");
 
-  size_t currentAsteroidCount = 5;
-  Asteroid_t* asteroidsArray = (Asteroid_t*)calloc(currentAsteroidCount, sizeof(Asteroid_t));
-  if( asteroidsArray == NULL)
-  {
-    free(bulletsArray);
-    CloseWindow();
-    return -1;
-  }
+    Spaceship_t spaceship = {
+      .m_center = (Vector2){ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
+      .m_rotation_angle = 0.0f,
+    };
 
-  Vector2 crosshairCenter = { 0 };
-
-  float asteroidSpawnTimer = 0.0f;
-
-  while (!WindowShouldClose())
-  {
-    BeginDrawing();
-    ClearBackground(BLACK);
-
-    // -------------- UPDATING --------------
-    crosshairCenter = GetClampedMousePosition(&crosshairTexture);
-    UpdateSpaceshipRotation(&spaceship, crosshairCenter);
-    UpdateSpaceshipPosition(&spaceship, GetFrameTime());
-
-
-    // -------------- SPAWNING ASTEROIDS BY TIMER --------------
-    asteroidSpawnTimer += GetFrameTime();
-
-    if (asteroidSpawnTimer >= 2.0f)
+    Bullet_t* bulletsArray = (Bullet_t*)calloc(MAX_ACTIVE_BULLET_COUNT, sizeof(Bullet_t));
+    if (bulletsArray == NULL)
     {
-      asteroidSpawnTimer = 0.0f;
-      Asteroid_t* tempAsteroidArray = realloc(asteroidsArray, (++currentAsteroidCount) * sizeof(Asteroid_t));
-      if (tempAsteroidArray == NULL)
-      {
-        free(asteroidsArray);
-        free(bulletsArray);
-        CloseWindow();
-        return -1;
-      }
-      asteroidsArray = tempAsteroidArray;
-      printf("Asteroid count increased to: %zu\n", currentAsteroidCount);
+      CloseWindow();
+      return -1;
     }
-    
-    UpdateBulletsLocations(bulletsArray);
-    UpdateAsteroids(asteroidsArray, currentAsteroidCount);
 
-    // -------------- DRAWING --------------
-    DrawSpaceship(&texture, &spaceship);
-    DrawCrosshair(&crosshairTexture, crosshairCenter);
+    size_t currentAsteroidCount = 5;
+    Asteroid_t* asteroidsArray = (Asteroid_t*)calloc(currentAsteroidCount, sizeof(Asteroid_t));
+    if( asteroidsArray == NULL)
+    {
+      free(bulletsArray);
+      CloseWindow();
+      return -1;
+    }
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-      FindFirstAvailableBulletAndShoot(bulletsArray, spaceship.m_center, crosshairCenter);
+    Vector2 crosshairCenter = { 0 };
+    float asteroidSpawnTimer = 0.0f;
+    float backgroundScrollOffset = 0.0f;
+    float backgroundScrollSpeed = 120.0f; // Pixels per second
+
+    while (!WindowShouldClose() && !shouldRestart)
+    {
+      BeginDrawing();
+      ClearBackground(BLACK);
+
+      // -------------- UPDATING --------------
+      crosshairCenter = GetClampedMousePosition(&crosshairTexture);
+      UpdateSpaceshipRotation(&spaceship, crosshairCenter);
+      UpdateSpaceshipPosition(&spaceship, GetFrameTime());
+
+      // -------------- SPAWNING ASTEROIDS BY TIMER --------------
+      asteroidSpawnTimer += GetFrameTime();
+
+      if (asteroidSpawnTimer >= ASTEROID_SPAWN_TIMER)
+      {
+        asteroidSpawnTimer = 0.0f;
+
+        Asteroid_t* tempAsteroidArray = realloc(asteroidsArray, (++currentAsteroidCount) * sizeof(Asteroid_t));
+        if (tempAsteroidArray == NULL)
+        {
+          free(asteroidsArray);
+          free(bulletsArray);
+          CloseWindow();
+          return -1;
+        }
+        asteroidsArray = tempAsteroidArray;
+      }
+      // ---------------------------------------------------------
       
-    CheckCollisionsBetweenBulletsAndAsteroids(bulletsArray, asteroidsArray, currentAsteroidCount);
-    CheckIfSpaceshipIsDead(&spaceship, asteroidsArray, currentAsteroidCount);
+      UpdateBulletsLocations(bulletsArray);
+      UpdateAsteroids(asteroidsArray, currentAsteroidCount);
 
-    DrawBullets(&texture, bulletsArray, crosshairCenter);
-    DrawAsteroids(&texture, asteroidsArray, currentAsteroidCount);
-    
+      CheckCollisionsBetweenBulletsAndAsteroids(bulletsArray, asteroidsArray, currentAsteroidCount);
+      CheckIfSpaceshipIsDead(&spaceship, asteroidsArray, currentAsteroidCount, &shouldRestart);
 
-    DrawLine(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT, RED);
-    DrawLine(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, RED);
-    DrawLine(spaceship.m_center.x, spaceship.m_center.y, (int)crosshairCenter.x, (int)crosshairCenter.y, YELLOW);
-    DrawFPS(10, 10);
+      // Update background scroll
+      backgroundScrollOffset += backgroundScrollSpeed * GetFrameTime();
+      // Wrap around when offset exceeds texture width for seamless loop
+      if (backgroundScrollOffset >= galaxyTexture.width)
+        backgroundScrollOffset -= galaxyTexture.width;
+      
+      // -------------- DRAWING --------------
+      DrawBackgroundImage(&galaxyTexture, backgroundScrollOffset);
 
-    EndDrawing();
+      DrawSpaceship(&texture, &spaceship);
+      DrawCrosshair(&crosshairTexture, crosshairCenter);
+
+      if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        FindFirstAvailableBulletAndShoot(bulletsArray, spaceship.m_center, crosshairCenter);
+        
+      DrawBullets(&texture, bulletsArray, crosshairCenter);
+      DrawAsteroids(&texture, asteroidsArray, currentAsteroidCount);
+      
+      /*
+        DrawLine(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT, RED);
+        DrawLine(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2, RED);
+        DrawLine( spaceship.m_center.x, 
+                  spaceship.m_center.y, 
+                  (int)crosshairCenter.x, 
+                  (int)crosshairCenter.y, 
+                  YELLOW);
+        DrawFPS(10, 10);
+      */
+
+      EndDrawing();
+    }
+
+    // Clean up before restart
+    CleanUp(bulletsArray, asteroidsArray, &texture, &crosshairTexture, &galaxyTexture);
   }
 
-  // --------------------- CLEANUP ---------------------
-
-  free(bulletsArray);
-  free(asteroidsArray);
-  UnloadTexture(texture);
-  UnloadTexture(crosshairTexture);
   CloseWindow();
   return 0;
 }

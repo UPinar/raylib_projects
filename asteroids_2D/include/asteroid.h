@@ -22,6 +22,8 @@
 #define   ASTEROID_MIN_SPEED              100.0F  
 #define   ASTEROID_MAX_SPEED              300.0F
 
+#define   ASTEROID_SPAWN_TIMER            0.5F
+
 
 typedef enum AsteroidSize {
   ASTEROID_SIZE_LARGE,
