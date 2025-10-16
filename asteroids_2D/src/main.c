@@ -10,10 +10,6 @@
 #include <stdio.h>  
 #include <stdlib.h>     // calloc, free
 
-
-// [-] TODO: Score tablosu eklenilecek.
-
-
 void UpdateBackgroundImage(Texture2D* galaxyTexture, float* backgroundScrollOffset);
 void DrawBackgroundImage(Texture2D* texture, float scrollOffset);
 
@@ -32,7 +28,7 @@ int main(void)
     SetWindowMonitor(1);
   
   // SetTargetFPS(SCREEN_FPS);
-  // ToggleBorderlessWindowed();
+  ToggleBorderlessWindowed();
   DisableCursor();
 
   bool shouldRestart = true;
@@ -50,12 +46,16 @@ int main(void)
   Vector2 crosshairCenter = { 0 };
   float backgroundScrollOffset = 0.0f;
   float deltaTime = 0.0f;
+  int score = 0;
 
   while (shouldRestart != false)
   {
     shouldRestart = false;
 
     SetMousePosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    
+    // Reset score on restart
+    score = 0;
 
     texture           = LoadTexture("assets/asteroids.png");
     crosshairTexture  = LoadTexture("assets/crosshair.png");
@@ -118,8 +118,8 @@ int main(void)
 
       Asteroid_UpdateAsteroids(&asteroidsArray, &currentAsteroidCount, deltaTime);
 
-      Collision_CheckCollisionsBetweenBulletsAndAsteroids(bulletsArray, asteroidsArray, currentAsteroidCount);
-
+      int hits = Collision_CheckCollisionsBetweenBulletsAndAsteroids(bulletsArray, asteroidsArray, currentAsteroidCount);
+      score += hits;
 
       // -------------- DRAWING --------------
       DrawBackgroundImage(&galaxyTexture, backgroundScrollOffset);
@@ -133,6 +133,8 @@ int main(void)
       Bullet_DrawBullets(&texture, bulletsArray, crosshairCenter);
       Asteroid_DrawAsteroids(&texture, asteroidsArray, currentAsteroidCount);
       
+
+      DrawText(TextFormat("Score: %d", score), SCREEN_WIDTH / 2, 30, 30, WHITE);   
       DrawFPS(10, 10);
       EndDrawing();
     }

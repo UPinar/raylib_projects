@@ -1,12 +1,13 @@
 #include "collision.h"
 #include "raylib.h"
 
-void Collision_CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray, 
-                                                          Asteroid_t* asteroidsArray, 
-                                                          size_t currentAsteroidCount)
+int Collision_CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray, 
+                                                         Asteroid_t* asteroidsArray, 
+                                                         size_t currentAsteroidCount)
 {
   Rectangle bulletRect = { 0 };
   Rectangle asteroidRect = { 0 };
+  int hitCount = 0;
 
   for (int i = 0; i < MAX_ACTIVE_BULLET_COUNT; i++)
   {
@@ -39,10 +40,13 @@ void Collision_CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray
             }
             asteroidsArray[j].m_active = false;
             bulletsArray[i].m_active = false;
+            hitCount++;
             break;
           }
         }
       }
     }
   }
+  
+  return hitCount;
 }

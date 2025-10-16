@@ -6,8 +6,8 @@
 
 #include <stddef.h>   // size_t
 
-void Collision_CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray, 
-                                                        Asteroid_t* asteroidsArray, 
-                                                        size_t currentAsteroidCount);
+int Collision_CheckCollisionsBetweenBulletsAndAsteroids( Bullet_t* bulletsArray, 
+                                                         Asteroid_t* asteroidsArray, 
+                                                         size_t currentAsteroidCount);
 
 #endif // COLLISION_H

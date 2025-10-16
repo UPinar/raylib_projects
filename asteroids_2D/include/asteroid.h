@@ -9,19 +9,22 @@
 #define   ASTEROID_LARGE_TOP_LEFT_Y       0.0F
 #define   ASTEROID_LARGE_WIDTH            160.0F
 #define   ASTEROID_LARGE_HEIGHT           160.0F
+#define   ASTEROID_LARGE_MIN_SPEED        20.0F
+#define   ASTEROID_LARGE_MAX_SPEED        50.0F
 
 #define   ASTEROID_MEDIUM_TOP_LEFT_X      0.0F
 #define   ASTEROID_MEDIUM_TOP_LEFT_Y      160.0F
 #define   ASTEROID_MEDIUM_WIDTH           96.0F
 #define   ASTEROID_MEDIUM_HEIGHT          96.0F
+#define   ASTEROID_MEDIUM_MIN_SPEED       50.0F
+#define   ASTEROID_MEDIUM_MAX_SPEED       100.0F
 
 #define   ASTEROID_SMALL_TOP_LEFT_X       0.0F
 #define   ASTEROID_SMALL_TOP_LEFT_Y       256.0F
 #define   ASTEROID_SMALL_WIDTH            64.0F
 #define   ASTEROID_SMALL_HEIGHT           64.0F
-    
-#define   ASTEROID_MIN_SPEED              70.0F  
-#define   ASTEROID_MAX_SPEED              150.0F
+#define   ASTEROID_SMALL_MIN_SPEED        100.0F
+#define   ASTEROID_SMALL_MAX_SPEED        150.0F
 
 #define   ASTEROID_SPAWN_TIMER            4.0F
 

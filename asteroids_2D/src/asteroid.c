@@ -49,14 +49,36 @@ static Vector2 Asteroid_GetRandomAsteroidDirection(void)
 
 void Asteroid_SetAsteroidProperties(Asteroid_t* asteroid)
 {
+  int randomSize = GetRandomValue(0, 2); // 0: Large, 1: Medium, 2: Small
+  switch (randomSize)
+  {
+  case ASTEROID_SIZE_LARGE:
+    asteroid->m_size                = ASTEROID_SIZE_LARGE;
+    asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_LARGE_TOP_LEFT_X, ASTEROID_LARGE_TOP_LEFT_Y};
+    asteroid->m_width               = ASTEROID_LARGE_WIDTH;
+    asteroid->m_height              = ASTEROID_LARGE_HEIGHT;
+    asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_LARGE_MIN_SPEED, (int)ASTEROID_LARGE_MAX_SPEED);
+    break;
+  case ASTEROID_SIZE_MEDIUM:
+    asteroid->m_size                = ASTEROID_SIZE_MEDIUM;
+    asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_MEDIUM_TOP_LEFT_X, ASTEROID_MEDIUM_TOP_LEFT_Y};
+    asteroid->m_width               = ASTEROID_MEDIUM_WIDTH;
+    asteroid->m_height              = ASTEROID_MEDIUM_HEIGHT;
+    asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_MEDIUM_MIN_SPEED, (int)ASTEROID_MEDIUM_MAX_SPEED);
+    break;
+  case ASTEROID_SIZE_SMALL:
+    asteroid->m_size                = ASTEROID_SIZE_SMALL;
+    asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_SMALL_TOP_LEFT_X, ASTEROID_SMALL_TOP_LEFT_Y};
+    asteroid->m_width               = ASTEROID_SMALL_WIDTH;
+    asteroid->m_height              = ASTEROID_SMALL_HEIGHT;
+    asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_SMALL_MIN_SPEED, (int)ASTEROID_SMALL_MAX_SPEED);
+    break;
+  }
+
   asteroid->m_active              = true;
   asteroid->m_size                = ASTEROID_SIZE_LARGE;
-  asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_LARGE_TOP_LEFT_X, ASTEROID_LARGE_TOP_LEFT_Y};
-  asteroid->m_width               = ASTEROID_LARGE_WIDTH;
-  asteroid->m_height              = ASTEROID_LARGE_HEIGHT;
   asteroid->m_position            = Asteroid_GetRandomAsteroidSpawnLocation();
   asteroid->m_direction           = Asteroid_GetRandomAsteroidDirection();
-  asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_MIN_SPEED, (int)ASTEROID_MAX_SPEED);
   asteroid->m_lifetime            = 0.0f;
   asteroid->m_is_splitted         = false;
   asteroid->m_rotation_angle      = (float)GetRandomValue(0, 360);
@@ -119,7 +141,7 @@ static void Asteroid_GenerateTwoMediumAsteroidsFromLarge(Asteroid_t** p_asteroid
     newAsteroidArray[i]->m_height              = ASTEROID_MEDIUM_HEIGHT;
     newAsteroidArray[i]->m_position            = splitPosition;
     newAsteroidArray[i]->m_direction           = Asteroid_GetRandomAsteroidDirection();
-    newAsteroidArray[i]->m_speed               = (float)GetRandomValue((int)ASTEROID_MIN_SPEED, (int)ASTEROID_MAX_SPEED);
+    newAsteroidArray[i]->m_speed               = (float)GetRandomValue((int)ASTEROID_MEDIUM_MIN_SPEED, (int)ASTEROID_MEDIUM_MAX_SPEED);
     newAsteroidArray[i]->m_lifetime            = 0.0f;
     newAsteroidArray[i]->m_is_splitted         = false;
     newAsteroidArray[i]->m_rotation_angle      = (float)GetRandomValue(0, 360);
@@ -156,7 +178,7 @@ static void Asteroid_GenerateTwoSmallAsteroidsFromMedium(Asteroid_t** p_asteroid
     newAsteroidArray[i]->m_height              = ASTEROID_SMALL_HEIGHT;
     newAsteroidArray[i]->m_position            = splitPosition;
     newAsteroidArray[i]->m_direction           = Asteroid_GetRandomAsteroidDirection();
-    newAsteroidArray[i]->m_speed               = (float)GetRandomValue((int)ASTEROID_MIN_SPEED, (int)ASTEROID_MAX_SPEED);
+    newAsteroidArray[i]->m_speed               = (float)GetRandomValue((int)ASTEROID_SMALL_MIN_SPEED, (int)ASTEROID_SMALL_MAX_SPEED);
     newAsteroidArray[i]->m_lifetime            = 0.0f;
     newAsteroidArray[i]->m_is_splitted         = false;
     newAsteroidArray[i]->m_rotation_angle      = (float)GetRandomValue(0, 360);
@@ -204,12 +226,11 @@ static void Asteroid_SpawnNewAsteroidsIfThereAreInactive(Asteroid_t* asteroidsAr
       asteroid->m_active            = true;
       asteroid->m_position          = Asteroid_GetRandomAsteroidSpawnLocation();
       asteroid->m_direction         = Asteroid_GetRandomAsteroidDirection();
-      asteroid->m_speed             = (float)GetRandomValue((int)ASTEROID_MIN_SPEED, (int)ASTEROID_MAX_SPEED);
       asteroid->m_lifetime          = 0.0f;
       asteroid->m_is_splitted       = false;
       asteroid->m_rotation_angle    = (float)GetRandomValue(0, 360);
       asteroid->m_rotation_speed    = (float)GetRandomValue(-180, 180);
-
+      
       int randomSize = GetRandomValue(0, 2);
       switch (randomSize)
       {
@@ -218,18 +239,21 @@ static void Asteroid_SpawnNewAsteroidsIfThereAreInactive(Asteroid_t* asteroidsAr
           asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_LARGE_TOP_LEFT_X, ASTEROID_LARGE_TOP_LEFT_Y};
           asteroid->m_width               = ASTEROID_LARGE_WIDTH;
           asteroid->m_height              = ASTEROID_LARGE_HEIGHT;
+          asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_LARGE_MIN_SPEED, (int)ASTEROID_LARGE_MAX_SPEED);
           break;
         case 1:
           asteroid->m_size = ASTEROID_SIZE_MEDIUM;
           asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_MEDIUM_TOP_LEFT_X, ASTEROID_MEDIUM_TOP_LEFT_Y};
           asteroid->m_width               = ASTEROID_MEDIUM_WIDTH;
           asteroid->m_height              = ASTEROID_MEDIUM_HEIGHT;
+          asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_MEDIUM_MIN_SPEED, (int)ASTEROID_MEDIUM_MAX_SPEED);
           break;
         case 2:
           asteroid->m_size = ASTEROID_SIZE_SMALL;
           asteroid->m_image_location_x_y  = (Vector2){ ASTEROID_SMALL_TOP_LEFT_X, ASTEROID_SMALL_TOP_LEFT_Y};
           asteroid->m_width               = ASTEROID_SMALL_WIDTH;
           asteroid->m_height              = ASTEROID_SMALL_HEIGHT;
+          asteroid->m_speed               = (float)GetRandomValue((int)ASTEROID_SMALL_MIN_SPEED, (int)ASTEROID_SMALL_MAX_SPEED);
           break;
       }
     }
