@@ -18,6 +18,8 @@
     "asteroid.h": "c",
     "stdio.h": "c",
     "raymath.h": "c",
-    "spaceship.h": "c"
+    "spaceship.h": "c",
+    "bullet.h": "c",
+    "screen.h": "c"
   }
 }

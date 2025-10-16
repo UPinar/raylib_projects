@@ -3,8 +3,9 @@
 
 #include "raylib.h"
 
+#include "stddef.h"   // size_t
 
-#define   ASTEROID_LARGE_TOP_LEFT_X       .0F
+#define   ASTEROID_LARGE_TOP_LEFT_X       0.0F
 #define   ASTEROID_LARGE_TOP_LEFT_Y       0.0F
 #define   ASTEROID_LARGE_WIDTH            160.0F
 #define   ASTEROID_LARGE_HEIGHT           160.0F
@@ -20,9 +21,11 @@
 #define   ASTEROID_SMALL_HEIGHT           64.0F
     
 #define   ASTEROID_MIN_SPEED              70.0F  
-#define   ASTEROID_MAX_SPEED              250.0F
+#define   ASTEROID_MAX_SPEED              150.0F
 
-#define   ASTEROID_SPAWN_TIMER            5.0F
+#define   ASTEROID_SPAWN_TIMER            4.0F
+
+#define   ASTEROID_SPAWN_COUNT            5
 
 
 typedef enum AsteroidSize {
@@ -45,5 +48,12 @@ typedef struct Asteroid {
   bool              m_active;
   bool              m_is_splitted;
 } Asteroid_t;
+
+extern float asteroid_SpawnTimer;
+
+void Asteroid_SetAsteroidProperties(Asteroid_t* asteroid);
+void Asteroid_UpdateAsteroids(Asteroid_t** p_asteroidsArray, size_t* p_currentAsteroidCount, float deltaTime);
+Asteroid_t* Asteroid_GenerateNewAsteroid(Asteroid_t** p_asteroidsArray, size_t* p_currentAsteroidCount);
+void Asteroid_DrawAsteroids(const Texture2D* texture, Asteroid_t* asteroidsArray, size_t currentAsteroidCount);
 
 #endif // ASTEROID_H

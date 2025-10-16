@@ -18,4 +18,7 @@ typedef struct Bullet {
   bool      m_active;
 } Bullet_t;
 
+void Bullet_UpdateBulletsLocations(Bullet_t* bulletsArray, float deltaTime);
+void Bullet_FindFirstAvailableBulletAndShoot(Bullet_t* bulletsArray, Vector2 spaceshipPosition, Vector2 crosshairCenter);
+void Bullet_DrawBullets(const Texture2D* texture, Bullet_t* bulletsArray, Vector2 crosshairCenter);
 #endif // BULLET_H
